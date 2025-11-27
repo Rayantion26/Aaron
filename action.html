@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action - Gravity Ball</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <style>
+        body {
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #gameArea {
+            width: 100%;
+            height: 60vh;
+            background: #e9ecef;
+            border-radius: 1rem;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            border: 2px solid #dee2e6;
+        }
+
+        .ball {
+            width: 60px;
+            height: 60px;
+            background: #0d6efd;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .instruction {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #6c757d;
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body class="text-center p-4">
+    <div class="container">
+        <h1 class="mb-4">Gravity Ball</h1>
+        <div id="gameArea">
+            <div class="instruction">Click to Kick!</div>
+            <div id="ball" class="ball" style="left: 50%; top: 50%;"></div>
+        </div>
+        <a href="index.html" class="btn btn-secondary mt-4">Back to Home</a>
+    </div>
+
+    <script>
+        const ball = document.getElementById('ball');
+        const gameArea = document.getElementById('gameArea');
+
+        let x = gameArea.clientWidth / 2;
+        let y = 50;
+        let vx = 2;
+        let vy = 0;
+        const gravity = 0.5;
+        const bounce = -0.7;
+        const friction = 0.99;
+
+        function update() {
+            vy += gravity;
+            x += vx;
+            y += vy;
+
+            // Floor collision
+            if (y + 60 > gameArea.clientHeight) {
+                y = gameArea.clientHeight - 60;
+                vy *= bounce;
+                vx *= friction; // Ground friction
+            }
+            // Ceiling collision
+            else if (y < 0) {
+                y = 0;
+                vy *= bounce;
+            }
+
+            // Wall collision
+            if (x + 60 > gameArea.clientWidth) {
+                x = gameArea.clientWidth - 60;
+                vx *= bounce;
+            } else if (x < 0) {
+                x = 0;
+                vx *= bounce;
+            }
+
+            ball.style.left = x + 'px';
+            ball.style.top = y + 'px';
+
+            requestAnimationFrame(update);
+        }
+
+        gameArea.addEventListener('mousedown', kick);
+        gameArea.addEventListener('touchstart', (e) => { e.preventDefault(); kick(); });
+
+        function kick() {
+            vy = -15; // Jump up
+            vx = (Math.random() - 0.5) * 10; // Random horizontal push
+
+            // Add a little squash effect
+            ball.style.transform = "scale(1.2, 0.8)";
+            setTimeout(() => ball.style.transform = "scale(1)", 100);
+        }
+
+        update();
+    </script>
+</body>
+
+</html>

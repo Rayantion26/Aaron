@@ -1,0 +1,36 @@
+/* CSS Variables for easy explanation */
+:root {
+  --font-head: 'Montserrat', sans-serif;
+  --font-body: 'Roboto', sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #f8f9fa;
+}
+
+h1,
+h2,
+h3,
+.navbar-brand,
+.btn {
+  font-family: var(--font-head);
+}
+
+.demo-box {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+  height: 100%;
+}
+
+.demo-box:hover {
+  transform: translateY(-5px);
+}
+
+.btn {
+  font-weight: 600;
+}

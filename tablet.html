@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablet - Drawing Canvas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <style>
+        body {
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #canvas-container {
+            width: 80%;
+            height: 60vh;
+            margin: 0 auto;
+            border: 4px solid #198754;
+            border-radius: 1rem;
+            background: white;
+            position: relative;
+            resize: both;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            min-width: 300px;
+            min-height: 300px;
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .controls {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: #333;
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+
+<body class="text-center p-4">
+    <div class="container">
+        <h1 class="mb-3">Digital Tablet</h1>
+        <p class="text-muted mb-4">Resize the box and draw something!</p>
+
+        <div id="canvas-container">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="color-btn active" style="background: #000;" onclick="setColor('#000', this)"></div>
+            <div class="color-btn" style="background: #dc3545;" onclick="setColor('#dc3545', this)"></div>
+            <div class="color-btn" style="background: #0d6efd;" onclick="setColor('#0d6efd', this)"></div>
+            <div class="color-btn" style="background: #198754;" onclick="setColor('#198754', this)"></div>
+            <button class="btn btn-outline-secondary btn-sm ms-3" onclick="clearCanvas()">Clear</button>
+        </div>
+
+        <a href="index.html" class="btn btn-secondary mt-4">Back to Home</a>
+    </div>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentColor = '#000';
+
+        // Resize canvas to fit container
+        function resizeCanvas() {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            tempCtx.drawImage(canvas, 0, 0);
+
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Restore drawing
+            ctx.drawImage(tempCanvas, 0, 0);
+
+            // Reset context styles
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = currentColor;
+        }
+
+        // Initial resize
+        resizeCanvas();
+
+        // Resize observer
+        new ResizeObserver(resizeCanvas).observe(container);
+
+        // Drawing Logic
+        function startDraw(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function endDraw() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        // Mouse Events
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mouseup', endDraw);
+        canvas.addEventListener('mousemove', draw);
+
+        // Touch Events
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); });
+        canvas.addEventListener('touchend', endDraw);
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+
+        // Controls
+        function setColor(color, btn) {
+            currentColor = color;
+            ctx.strokeStyle = color;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+
+</html>

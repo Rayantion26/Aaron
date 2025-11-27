@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danger - Defuse</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <style>
+        .countdown {
+            font-size: 120px;
+            font-weight: bold;
+            color: #dc3545;
+            font-family: monospace;
+        }
+
+        #defuseBtn {
+            position: relative;
+            transition: all 0.1s;
+        }
+
+        .boom {
+            font-size: 100px;
+            color: #000;
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translate(1px, 1px) rotate(0deg);
+            }
+
+            10% {
+                transform: translate(-1px, -2px) rotate(-1deg);
+            }
+
+            20% {
+                transform: translate(-3px, 0px) rotate(1deg);
+            }
+
+            30% {
+                transform: translate(3px, 2px) rotate(0deg);
+            }
+
+            40% {
+                transform: translate(1px, -1px) rotate(1deg);
+            }
+
+            50% {
+                transform: translate(-1px, 2px) rotate(-1deg);
+            }
+
+            60% {
+                transform: translate(-3px, 1px) rotate(0deg);
+            }
+
+            70% {
+                transform: translate(3px, 1px) rotate(-1deg);
+            }
+
+            80% {
+                transform: translate(-1px, -1px) rotate(1deg);
+            }
+
+            90% {
+                transform: translate(1px, 2px) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(1px, -2px) rotate(-1deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="text-center p-5">
+    <div class="container">
+        <h1 id="title">SELF DESTRUCT IMMINENT</h1>
+        <div id="timer" class="countdown">10.00</div>
+
+        <div style="height: 200px; position: relative; margin-top: 50px;">
+            <button id="defuseBtn" class="btn btn-danger btn-lg" onmouseover="moveButton()">DEFUSE</button>
+        </div>
+
+        <a href="index.html" class="btn btn-secondary mt-5">Back to Home</a>
+    </div>
+
+    <script>
+        let timeLeft = 10.00;
+        const timerEl = document.getElementById('timer');
+        const btn = document.getElementById('defuseBtn');
+        const title = document.getElementById('title');
+        let exploded = false;
+
+        const interval = setInterval(() => {
+            if (exploded) return;
+            timeLeft -= 0.01;
+            timerEl.innerText = timeLeft.toFixed(2);
+
+            if (timeLeft <= 0) {
+                explode();
+            }
+        }, 10);
+
+        function moveButton() {
+            if (exploded) return;
+            // 80% chance to move, 20% chance to stay (so it's possible but hard)
+            if (Math.random() > 0.2) {
+                const x = (Math.random() - 0.5) * 300;
+                const y = (Math.random() - 0.5) * 150;
+                btn.style.transform = `translate(${x}px, ${y}px)`;
+            }
+        }
+
+        btn.onclick = function () {
+            if (exploded) return;
+            clearInterval(interval);
+            title.innerText = "BOMB DEFUSED";
+            title.style.color = "#198754";
+            timerEl.style.color = "#198754";
+            btn.innerText = "SAFE";
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-success');
+            btn.onmouseover = null; // Stop moving
+            btn.style.transform = "none";
+        };
+
+        function explode() {
+            exploded = true;
+            clearInterval(interval);
+            timerEl.innerText = "0.00";
+            document.body.style.backgroundColor = "#ffcccc";
+            title.innerText = "BOOM!";
+            title.classList.add('boom');
+            btn.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
