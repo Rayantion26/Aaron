@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablet - Drawing Canvas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="index.css">
     <style>
         body {
@@ -66,30 +64,97 @@
 
 <body class="text-center p-4">
     <div class="container">
-        <h1 class="mb-3">Digital Tablet</h1>
-        <p class="text-muted mb-4">Resize the box and draw something!</p>
+        <h1 class="mb-3">Digital Tablet 🎨</h1>
+        <p class="text-muted mb-4">Resize, Glow, Rainbow - Create your masterpiece!</p>
+
+        <div
+            class="controls mb-3 p-3 bg-white rounded shadow-sm d-flex justify-content-center align-items-center flex-wrap gap-4">
+            <!-- Brush Size -->
+            <div class="d-flex align-items-center">
+                <label class="me-2 fw-bold">Size:</label>
+                <input type="range" class="form-range" min="1" max="50" id="sizeRange" style="width: 150px;">
+                <span id="sizeVal" class="ms-2 badge bg-light text-dark border">5px</span>
+            </div>
+
+            <div class="vr mx-2"></div>
+
+            <!-- Toggles (Reversed: Label then Switch) -->
+            <div class="d-flex align-items-center gap-3">
+                <div class="form-check form-switch form-check-reverse">
+                    <label class="form-check-label fw-bold me-2" for="rainbowSwitch">🌈 Rainbow</label>
+                    <input class="form-check-input" type="checkbox" id="rainbowSwitch">
+                </div>
+
+                <div class="form-check form-switch form-check-reverse">
+                    <label class="form-check-label fw-bold me-2" for="neonSwitch">✨ Neon</label>
+                    <input class="form-check-input" type="checkbox" id="neonSwitch">
+                </div>
+            </div>
+
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3" onclick="saveArt()">💾 Save Art</button>
+        </div>
 
         <div id="canvas-container">
             <canvas id="drawingCanvas"></canvas>
         </div>
 
-        <div class="controls">
-            <div class="color-btn active" style="background: #000;" onclick="setColor('#000', this)"></div>
-            <div class="color-btn" style="background: #dc3545;" onclick="setColor('#dc3545', this)"></div>
-            <div class="color-btn" style="background: #0d6efd;" onclick="setColor('#0d6efd', this)"></div>
-            <div class="color-btn" style="background: #198754;" onclick="setColor('#198754', this)"></div>
-            <button class="btn btn-outline-secondary btn-sm ms-3" onclick="clearCanvas()">Clear</button>
+        <div class="controls mt-3 d-flex flex-wrap justify-content-center gap-2">
+            <!-- Colors -->
+            <div class="color-btn active" style="background: #000;" onclick="setColor('#000', this)" title="Black">
+            </div>
+            <div class="color-btn" style="background: #6c757d;" onclick="setColor('#6c757d', this)" title="Gray"></div>
+            <div class="color-btn" style="background: #dc3545;" onclick="setColor('#dc3545', this)" title="Red"></div>
+            <div class="color-btn" style="background: #fd7e14;" onclick="setColor('#fd7e14', this)" title="Orange">
+            </div>
+            <div class="color-btn" style="background: #ffc107;" onclick="setColor('#ffc107', this)" title="Yellow">
+            </div>
+            <div class="color-btn" style="background: #198754;" onclick="setColor('#198754', this)" title="Green"></div>
+            <div class="color-btn" style="background: #20c997;" onclick="setColor('#20c997', this)" title="Teal"></div>
+            <div class="color-btn" style="background: #0d6efd;" onclick="setColor('#0d6efd', this)" title="Blue"></div>
+            <div class="color-btn" style="background: #6610f2;" onclick="setColor('#6610f2', this)" title="Purple">
+            </div>
+            <div class="color-btn" style="background: #d63384;" onclick="setColor('#d63384', this)" title="Pink"></div>
+
+            <div class="vr mx-2"></div>
+
+            <!-- Eraser -->
+            <button class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="setEraser(this)"
+                id="eraserBtn">
+                <span class="fs-5 me-1">🧼</span> Eraser
+            </button>
+
+            <button class="btn btn-outline-danger btn-sm ms-2" onclick="clearCanvas()">Clear All</button>
         </div>
 
         <a href="index.html" class="btn btn-secondary mt-4">Back to Home</a>
     </div>
 
+    <script src="sound.js"></script>
     <script>
         const container = document.getElementById('canvas-container');
         const canvas = document.getElementById('drawingCanvas');
         const ctx = canvas.getContext('2d');
+        const sizeRange = document.getElementById('sizeRange');
+        const sizeVal = document.getElementById('sizeVal');
+        const rainbowSwitch = document.getElementById('rainbowSwitch');
+        const neonSwitch = document.getElementById('neonSwitch');
+
         let isDrawing = false;
         let currentColor = '#000';
+        let isEraser = false;
+        let hue = 0;
+
+        // Load sizes from storage or defaults
+        let brushSize = localStorage.getItem('brushSize') || 5;
+        let eraserSize = localStorage.getItem('eraserSize') || 20;
+
+        // Initialize UI
+        function updateSliderUI() {
+            const val = isEraser ? eraserSize : brushSize;
+            sizeRange.value = val;
+            sizeVal.innerText = val + 'px';
+        }
+        updateSliderUI();
 
         // Resize canvas to fit container
         function resizeCanvas() {
@@ -104,23 +169,24 @@
 
             // Restore drawing
             ctx.drawImage(tempCanvas, 0, 0);
+            updateContext();
+        }
 
-            // Reset context styles
-            ctx.lineWidth = 3;
+        function updateContext() {
             ctx.lineCap = 'round';
-            ctx.strokeStyle = currentColor;
+            ctx.lineJoin = 'round';
         }
 
         // Initial resize
         resizeCanvas();
-
-        // Resize observer
         new ResizeObserver(resizeCanvas).observe(container);
 
         // Drawing Logic
         function startDraw(e) {
             isDrawing = true;
+            ctx.beginPath();
             draw(e);
+            if (!isEraser) Sound.click(); // Tiny feedback
         }
 
         function endDraw() {
@@ -131,9 +197,40 @@
         function draw(e) {
             if (!isDrawing) return;
 
+            // Browser zoom scaling fix
             const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || e.touches[0].clientX) - rect.left;
-            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const x = ((e.clientX || e.touches[0].clientX) - rect.left) * scaleX;
+            const y = ((e.clientY || e.touches[0].clientY) - rect.top) * scaleY;
+
+            // Styles
+            // Always use the current slider value, but technically the slider represents the current tool's size
+            ctx.lineWidth = sizeRange.value;
+
+            if (isEraser) {
+                // Eraser mode
+                ctx.globalCompositeOperation = "destination-out";
+                ctx.strokeStyle = "rgba(0,0,0,1)";
+                ctx.shadowBlur = 0;
+            } else {
+                ctx.globalCompositeOperation = "source-over";
+
+                if (rainbowSwitch.checked) {
+                    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                    hue = (hue + 1) % 360;
+                } else {
+                    ctx.strokeStyle = currentColor;
+                }
+
+                if (neonSwitch.checked) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = ctx.strokeStyle;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+            }
 
             ctx.lineTo(x, y);
             ctx.stroke();
@@ -145,6 +242,7 @@
         canvas.addEventListener('mousedown', startDraw);
         canvas.addEventListener('mouseup', endDraw);
         canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseleave', endDraw);
 
         // Touch Events
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); });
@@ -153,15 +251,67 @@
 
         // Controls
         function setColor(color, btn) {
+            Sound.click();
+            isEraser = false;
             currentColor = color;
-            ctx.strokeStyle = color;
+            rainbowSwitch.checked = false;
+            ctx.globalCompositeOperation = "source-over";
+
+            // Switch slider to saved brush size
+            updateSliderUI();
+
+            // Visuals
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('eraserBtn').classList.remove('active');
+            btn.classList.add('active');
+        }
+
+        function setEraser(btn) {
+            Sound.click();
+            isEraser = true;
+
+            // Switch slider to saved eraser size
+            updateSliderUI();
+
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
 
         function clearCanvas() {
+            Sound.snap();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
+
+        function saveArt() {
+            Sound.win();
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(canvas, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = 'my-masterpiece.png';
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        }
+
+        sizeRange.addEventListener('input', (e) => {
+            const val = e.target.value;
+            sizeVal.innerText = val + 'px';
+
+            // Save to correct variable and storage
+            if (isEraser) {
+                eraserSize = val;
+                localStorage.setItem('eraserSize', val);
+            } else {
+                brushSize = val;
+                localStorage.setItem('brushSize', val);
+            }
+        });
     </script>
 </body>
 

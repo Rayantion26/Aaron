@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Danger - Defuse</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="index.css">
     <style>
         .countdown {
@@ -83,16 +81,24 @@
         <div id="timer" class="countdown">10.00</div>
 
         <div style="height: 200px; position: relative; margin-top: 50px;">
-            <button id="defuseBtn" class="btn btn-danger btn-lg" onmouseover="moveButton()">DEFUSE</button>
+            <button id="defuseBtn" class="btn btn-danger btn-lg p-4 fw-bold" onmouseover="moveButton()">DEFUSE</button>
         </div>
+
+        <button id="detonateBtn" class="btn btn-dark btn-sm mt-3">DETONATE (I give up)</button>
+
+        <button id="restartBtn" class="btn btn-primary mt-3" style="display: none;" onclick="location.reload()">Play
+            Again</button>
 
         <a href="index.html" class="btn btn-secondary mt-5">Back to Home</a>
     </div>
 
+    <script src="sound.js"></script>
     <script>
         let timeLeft = 10.00;
         const timerEl = document.getElementById('timer');
         const btn = document.getElementById('defuseBtn');
+        const detonateBtn = document.getElementById('detonateBtn');
+        const restartBtn = document.getElementById('restartBtn');
         const title = document.getElementById('title');
         let exploded = false;
 
@@ -100,6 +106,9 @@
             if (exploded) return;
             timeLeft -= 0.01;
             timerEl.innerText = timeLeft.toFixed(2);
+
+            // Ticking sound every second
+            if (Math.abs(timeLeft % 1) < 0.02) Sound.click();
 
             if (timeLeft <= 0) {
                 explode();
@@ -109,27 +118,48 @@
         function moveButton() {
             if (exploded) return;
             // 80% chance to move, 20% chance to stay (so it's possible but hard)
+            // On mobile, this will trigger on touchstart too
             if (Math.random() > 0.2) {
                 const x = (Math.random() - 0.5) * 300;
                 const y = (Math.random() - 0.5) * 150;
                 btn.style.transform = `translate(${x}px, ${y}px)`;
+                Sound.click(); // Little annoying sound when it moves
             }
         }
+
+        // Add touch support for mobile difficulty
+        btn.addEventListener('touchstart', (e) => {
+            // on mobile, moving on touchstart makes it very hard/annoying, which is the goal
+            moveButton();
+        });
 
         btn.onclick = function () {
             if (exploded) return;
             clearInterval(interval);
+            Sound.win(); // Defused sound
             title.innerText = "BOMB DEFUSED";
             title.style.color = "#198754";
             timerEl.style.color = "#198754";
             btn.innerText = "SAFE";
             btn.classList.remove('btn-danger');
             btn.classList.add('btn-success');
-            btn.onmouseover = null; // Stop moving
-            btn.style.transform = "none";
+            // Remove listeners
+            btn.onmouseover = null;
+            btn.replaceWith(btn.cloneNode(true)); // Quick way to kill all listeners including touch
+            // Re-fetch since we cloned it (though visually we don't need to do much else)
+            const safeBtn = document.getElementById('defuseBtn');
+            safeBtn.style.transform = "none";
+            detonateBtn.style.display = 'none'; // Hide detonate if safe
+            restartBtn.style.display = 'inline-block'; // Show restart
         };
 
+        detonateBtn.onclick = function () {
+            if (exploded) return;
+            explode();
+        }
+
         function explode() {
+            Sound.explode(); // BOOM
             exploded = true;
             clearInterval(interval);
             timerEl.innerText = "0.00";
@@ -137,6 +167,10 @@
             title.innerText = "BOOM!";
             title.classList.add('boom');
             btn.style.display = 'none';
+            detonateBtn.style.display = 'none';
+            restartBtn.style.display = 'inline-block'; // Also nice to have here
+            restartBtn.classList.remove('btn-primary');
+            restartBtn.classList.add('btn-dark'); // Dark button for dark times
         }
     </script>
 </body>

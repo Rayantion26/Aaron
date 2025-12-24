@@ -1,34 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap');
+
 /* CSS Variables for easy explanation */
-:root {
-  --font-head: 'Montserrat', sans-serif;
-  --font-body: 'Roboto', sans-serif;
-}
+/* No custom variables needed with the new design */
+
 
 body {
-  font-family: var(--font-body);
-  background: #f8f9fa;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #333;
+
+  /* Modern Mesh Gradient Background */
+  background-color: #ff9a9e;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+  background:
+    radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.8), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(228, 228, 255, 0.8), transparent 25%),
+    linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  background-size: 200% 200%;
+  animation: gradientBG 15s ease infinite;
 }
 
-h1,
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* The following styles are no longer needed as the new body font is 'Outfit' */
+/* h1,
 h2,
 h3,
 .navbar-brand,
 .btn {
   font-family: var(--font-head);
-}
+} */
 
 .demo-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  transition: transform 0.1s ease-out;
+  /* Changed for JS tilt */
   height: 100%;
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
-.demo-box:hover {
-  transform: translateY(-5px);
+/* Remove CSS hover shift because we are using JS Tilt now */
+/* .demo-box:hover { transform: translateY(-10px); } */
+
+.navbar {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0 0 20px 20px;
 }
 
 .btn {

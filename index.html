@@ -4,11 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bootstrap Demo</title>
+    <title>Fun Zone</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Roboto:wght@400;500&display=swap"
-        rel="stylesheet">
     <link rel="stylesheet" href="index.css">
 </head>
 
@@ -17,7 +14,8 @@
     <nav class="navbar navbar-light bg-white shadow-sm mb-5">
         <div class="container">
             <div class="d-flex align-items-center">
-                <a href="/" class="text-decoration-none me-3" style="font-size: 1.5rem; line-height: 1;" title="Return Home">🏠</a>
+                <a href="/" class="text-decoration-none me-3" style="font-size: 1.5rem; line-height: 1;"
+                    title="Return Home">🏠</a>
                 <span class="navbar-brand mb-0 h1">Bootstrap Demo</span>
             </div>
         </div>
@@ -27,34 +25,52 @@
 
         <div class="row text-center mb-5">
             <div class="col">
-                <h1 class="display-4">Hello, World!</h1>
-                <p class="lead text-muted">Resize your browser to see the layout change.</p>
+                <h1 class="display-3 fw-bold mb-3">Welcome to Fun Zone! 🎮</h1>
+                <p class="lead text-muted">Choose your adventure below. Optimized for all devices!</p>
             </div>
         </div>
 
         <div class="row g-4">
 
-            <div class="col-12 col-md-4">
-                <div class="demo-box">
-                    <h3>Mobile</h3>
-                    <p>I am full width on mobile screens.</p>
-                    <a href="action.html" class="btn btn-primary w-100">Action</a>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="demo-box border-primary border-2">
+                    <h3 class="mb-3">🎈 Action</h3>
+                    <p>Defy gravity in this ball-bouncing adventure!</p>
+                    <a href="action.html" class="btn btn-primary w-100 rounded-pill">Play Gravity Ball</a>
                 </div>
             </div>
 
-            <div class="col-12 col-md-4">
-                <div class="demo-box">
-                    <h3>Tablet</h3>
-                    <p>I share the row on larger screens.</p>
-                    <a href="tablet.html" class="btn btn-success w-100">Draw Now</a>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="demo-box border-success border-2">
+                    <h3 class="mb-3">🎨 Tablet</h3>
+                    <p>A canvas for your imagination.</p>
+                    <a href="tablet.html" class="btn btn-success w-100 rounded-pill">Draw Now</a>
                 </div>
             </div>
 
-            <div class="col-12 col-md-4">
-                <div class="demo-box">
-                    <h3>Desktop</h3>
-                    <p>We are equal width columns here.</p>
-                    <a href="danger.html" class="btn btn-danger w-100">Danger</a>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="demo-box border-danger border-2">
+                    <h3 class="mb-3">💣 Danger</h3>
+                    <p>Can you defuse it in time?</p>
+                    <a href="danger.html" class="btn btn-danger w-100 rounded-pill">Enter Danger Zone</a>
+                </div>
+            </div>
+
+            <!-- Memory Game -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="demo-box d-flex flex-column h-100">
+                    <h2 class="h4 fw-bold">🧠 Memory</h2>
+                    <p class="flex-grow-1">Test your brain! Repeat the growing pattern.</p>
+                    <a href="memory.html" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">Play Now</a>
+                </div>
+            </div>
+
+            <!-- Chess Game -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="demo-box d-flex flex-column h-100">
+                    <h2 class="h4 fw-bold">♟️ Neon Chess</h2>
+                    <p class="flex-grow-1">Classic strategy vs AI with a modern twist.</p>
+                    <a href="chess.html" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">Play Now</a>
                 </div>
             </div>
 
@@ -62,6 +78,37 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="sound.js"></script>
+    <script>
+        // Sound only on clicking, user requested "no need for sound" on hover
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('click', () => Sound.startObj());
+        });
+
+        // 3D Tilt Effect
+        const cards = document.querySelectorAll('.demo-box');
+
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Calculate rotation based on cursor position relative to center
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * -10; // Max 10deg rotation
+                const rotateY = ((x - centerX) / centerX) * 10;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+            });
+        });
+    </script>
 </body>
 
 </html>
