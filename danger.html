@@ -7,13 +7,13 @@
     <title>Danger - Defuse</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="index.css">
     <style>
         .countdown {
-            font-size: 120px;
+            font-size: 100px;
             font-weight: bold;
             color: #dc3545;
             font-family: monospace;
+            text-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
         }
 
         #defuseBtn {
@@ -72,106 +72,380 @@
                 transform: translate(1px, -2px) rotate(-1deg);
             }
         }
+
+        /* Wire Phase */
+        .wire-panel {
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #222;
+            border-radius: 12px;
+            border: 2px solid #555;
+        }
+
+        .wire {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 2px solid transparent;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .wire:hover {
+            transform: scale(1.03);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+        }
+
+        .wire .scissors {
+            margin-left: auto;
+            font-size: 1.3rem;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .wire:hover .scissors {
+            opacity: 1;
+        }
+
+        .wire.cut-correct {
+            opacity: 0.5;
+            border-color: #198754;
+            text-decoration: line-through;
+        }
+
+        .wire.cut-wrong {
+            opacity: 0.5;
+            border-color: #dc3545;
+            animation: shake 0.3s;
+        }
+
+        /* Stats */
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .game-stat {
+            text-align: center;
+        }
+
+        .game-stat .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .game-stat .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: monospace;
+            color: #fff;
+        }
+
+        /* Round banner */
+        .round-banner {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffc107;
+            animation: fadeInScale 0.5s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
     </style>
 </head>
 
-<body class="text-center p-5">
+<body class="text-center p-4">
     <div class="container">
-        <h1 id="title">SELF DESTRUCT IMMINENT</h1>
-        <div id="timer" class="countdown">10.00</div>
-
-        <div style="height: 200px; position: relative; margin-top: 50px;">
-            <button id="defuseBtn" class="btn btn-danger btn-lg p-4 fw-bold" onmouseover="moveButton()">DEFUSE</button>
+        <div class="game-stats mb-3">
+            <div class="game-stat">
+                <div class="stat-label">Round</div>
+                <div class="stat-value" id="roundDisplay">1</div>
+            </div>
+            <div class="game-stat">
+                <div class="stat-label">Score</div>
+                <div class="stat-value" id="scoreDisplay" style="color: #ffd700;">0</div>
+            </div>
+            <div class="game-stat">
+                <div class="stat-label">Best</div>
+                <div class="stat-value" id="bestDisplay" style="color: #5dade2;">0</div>
+            </div>
         </div>
 
-        <button id="detonateBtn" class="btn btn-dark btn-sm mt-3">DETONATE (I give up)</button>
+        <h1 id="title">💣 SELF DESTRUCT IMMINENT</h1>
+        <div id="timer" class="countdown">10.00</div>
 
-        <button id="restartBtn" class="btn btn-primary mt-3" style="display: none;" onclick="location.reload()">Play
-            Again</button>
+        <!-- Phase 1: Defuse Button -->
+        <div id="phase1" style="height: 200px; position: relative; margin-top: 30px;">
+            <button id="defuseBtn" class="btn btn-danger btn-lg p-4 fw-bold" onmouseover="moveButton()">
+                DEFUSE 🔧
+            </button>
+        </div>
 
-        <a href="index.html" class="btn btn-secondary mt-5">Back to Home</a>
+        <!-- Phase 2: Wire Cutting (hidden initially) -->
+        <div id="phase2" style="display: none;">
+            <h3 class="text-warning mb-2">✂️ CUT THE CORRECT WIRE!</h3>
+            <p class="text-muted" id="wireHint">Find the safe wire...</p>
+            <div class="wire-panel" id="wirePanel">
+                <!-- JS generated -->
+            </div>
+        </div>
+
+        <button id="detonateBtn" class="btn btn-dark btn-sm mt-3">💀 DETONATE (I give up)</button>
+        <button id="restartBtn" class="btn btn-primary mt-3 rounded-pill px-4" style="display: none;"
+            onclick="startRound()">Next Round ▶</button>
+        <button id="fullRestartBtn" class="btn btn-outline-light mt-3 rounded-pill px-4" style="display: none;"
+            onclick="fullRestart()">Play Again 🔄</button>
+
+        <div class="mt-4">
+            <a href="index.html" class="btn btn-secondary">Back to Home</a>
+        </div>
     </div>
 
     <script src="sound.js"></script>
     <script>
-        let timeLeft = 10.00;
         const timerEl = document.getElementById('timer');
         const btn = document.getElementById('defuseBtn');
         const detonateBtn = document.getElementById('detonateBtn');
         const restartBtn = document.getElementById('restartBtn');
+        const fullRestartBtn = document.getElementById('fullRestartBtn');
         const title = document.getElementById('title');
+        const phase1 = document.getElementById('phase1');
+        const phase2 = document.getElementById('phase2');
+        const wirePanel = document.getElementById('wirePanel');
+        const wireHint = document.getElementById('wireHint');
+        const roundDisplay = document.getElementById('roundDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const bestDisplay = document.getElementById('bestDisplay');
+
+        let timeLeft = 10.00;
         let exploded = false;
+        let interval = null;
+        let round = 1;
+        let score = 0;
+        let best = parseInt(localStorage.getItem('dangerBest')) || 0;
+        let dodgeChance = 0.75;
+        let wireCount = 3;
+        let correctWire = 0;
+        let inWirePhase = false;
 
-        const interval = setInterval(() => {
-            if (exploded) return;
-            timeLeft -= 0.01;
+        bestDisplay.textContent = best;
+
+        const wireColors = [
+            { name: 'Red', color: '#dc3545', bg: 'linear-gradient(90deg, #dc3545, #a71d2a)' },
+            { name: 'Blue', color: '#0d6efd', bg: 'linear-gradient(90deg, #0d6efd, #084298)' },
+            { name: 'Green', color: '#198754', bg: 'linear-gradient(90deg, #198754, #0f5132)' },
+            { name: 'Yellow', color: '#ffc107', bg: 'linear-gradient(90deg, #ffc107, #cc9a06)' },
+            { name: 'Purple', color: '#6f42c1', bg: 'linear-gradient(90deg, #6f42c1, #4a2d84)' },
+        ];
+
+        const hints = [
+            "Don't cut the {wrong} wire!",
+            "The safe wire is NOT {wrong}.",
+            "I'd avoid {wrong} if I were you...",
+            "Hmm... {wrong} looks suspicious.",
+            "Definitely not {wrong}. Probably.",
+        ];
+
+        function getRoundTime() {
+            return Math.max(4, 11 - round);
+        }
+
+        function getRoundWires() {
+            return Math.min(3 + Math.floor((round - 1) / 2), 5);
+        }
+
+        function startRound() {
+            exploded = false;
+            inWirePhase = false;
+            timeLeft = getRoundTime();
+            wireCount = getRoundWires();
+            dodgeChance = Math.min(0.75 + round * 0.03, 0.95);
+
+            // Reset UI
+            title.innerText = `💣 ROUND ${round} — DEFUSE!`;
+            title.style.color = '';
+            title.classList.remove('boom');
             timerEl.innerText = timeLeft.toFixed(2);
+            timerEl.style.color = '#dc3545';
+            document.body.style.backgroundColor = '';
 
-            // Ticking sound every second
-            if (Math.abs(timeLeft % 1) < 0.02) Sound.click();
+            phase1.style.display = 'block';
+            phase2.style.display = 'none';
+            restartBtn.style.display = 'none';
+            fullRestartBtn.style.display = 'none';
+            detonateBtn.style.display = 'inline-block';
 
-            if (timeLeft <= 0) {
-                explode();
-            }
-        }, 10);
+            btn.innerText = 'DEFUSE 🔧';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-danger');
+            btn.style.display = 'inline-block';
+            btn.style.transform = 'none';
+            btn.onmouseover = moveButton;
+
+            // Reset touch handler
+            const newBtn = btn.cloneNode(true);
+            btn.replaceWith(newBtn);
+            const freshBtn = document.getElementById('defuseBtn');
+            freshBtn.onmouseover = moveButton;
+            freshBtn.addEventListener('touchstart', (e) => moveButton());
+            freshBtn.onclick = onDefuseClick;
+
+            roundDisplay.textContent = round;
+
+            // Start timer
+            clearInterval(interval);
+            interval = setInterval(() => {
+                if (exploded) return;
+                timeLeft -= 0.01;
+                timerEl.innerText = timeLeft.toFixed(2);
+                if (Math.abs(timeLeft % 1) < 0.02) Sound.click();
+                if (timeLeft <= 3) timerEl.style.color = '#ff4444';
+                if (timeLeft <= 0) explode();
+            }, 10);
+        }
 
         function moveButton() {
-            if (exploded) return;
-            // 80% chance to move, 20% chance to stay (so it's possible but hard)
-            // On mobile, this will trigger on touchstart too
-            if (Math.random() > 0.2) {
+            if (exploded || inWirePhase) return;
+            if (Math.random() < dodgeChance) {
+                const freshBtn = document.getElementById('defuseBtn');
                 const x = (Math.random() - 0.5) * 300;
                 const y = (Math.random() - 0.5) * 150;
-                btn.style.transform = `translate(${x}px, ${y}px)`;
-                Sound.click(); // Little annoying sound when it moves
+                freshBtn.style.transform = `translate(${x}px, ${y}px)`;
+                Sound.click();
             }
         }
 
-        // Add touch support for mobile difficulty
-        btn.addEventListener('touchstart', (e) => {
-            // on mobile, moving on touchstart makes it very hard/annoying, which is the goal
-            moveButton();
-        });
+        function onDefuseClick() {
+            if (exploded || inWirePhase) return;
+            // Enter wire phase
+            inWirePhase = true;
+            phase1.style.display = 'none';
+            phase2.style.display = 'block';
+            Sound.snap();
+            title.innerText = '✂️ CUT THE RIGHT WIRE!';
+            generateWires();
+        }
 
-        btn.onclick = function () {
+        function generateWires() {
+            wirePanel.innerHTML = '';
+            // Shuffle and pick wireCount colors
+            const shuffled = [...wireColors].sort(() => Math.random() - 0.5);
+            const activeWires = shuffled.slice(0, wireCount);
+            correctWire = Math.floor(Math.random() * wireCount);
+
+            // Generate hint (hints about a WRONG wire)
+            const wrongIndices = activeWires.map((_, i) => i).filter(i => i !== correctWire);
+            const wrongIdx = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+            const hintTemplate = hints[Math.floor(Math.random() * hints.length)];
+            wireHint.textContent = hintTemplate.replace('{wrong}', activeWires[wrongIdx].name);
+
+            activeWires.forEach((wire, i) => {
+                const el = document.createElement('div');
+                el.className = 'wire';
+                el.style.background = wire.bg;
+                el.innerHTML = `<span>━━━ ${wire.name} Wire ━━━</span><span class="scissors">✂️</span>`;
+                el.onclick = () => cutWire(i, correctWire, el);
+                wirePanel.appendChild(el);
+            });
+        }
+
+        function cutWire(index, correct, el) {
             if (exploded) return;
-            clearInterval(interval);
-            Sound.win(); // Defused sound
-            title.innerText = "BOMB DEFUSED";
-            title.style.color = "#198754";
-            timerEl.style.color = "#198754";
-            btn.innerText = "SAFE";
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-success');
-            // Remove listeners
-            btn.onmouseover = null;
-            btn.replaceWith(btn.cloneNode(true)); // Quick way to kill all listeners including touch
-            // Re-fetch since we cloned it (though visually we don't need to do much else)
-            const safeBtn = document.getElementById('defuseBtn');
-            safeBtn.style.transform = "none";
-            detonateBtn.style.display = 'none'; // Hide detonate if safe
-            restartBtn.style.display = 'inline-block'; // Show restart
-        };
+            Sound.snap();
+
+            if (index === correct) {
+                // SUCCESS!
+                el.classList.add('cut-correct');
+                clearInterval(interval);
+
+                const timeBonus = Math.ceil(timeLeft * 10);
+                const roundBonus = round * 50;
+                score += timeBonus + roundBonus;
+                scoreDisplay.textContent = score;
+
+                if (score > best) {
+                    best = score;
+                    bestDisplay.textContent = best;
+                    localStorage.setItem('dangerBest', best);
+                }
+
+                title.innerText = `✅ BOMB DEFUSED! +${timeBonus + roundBonus} pts`;
+                title.style.color = '#198754';
+                timerEl.style.color = '#198754';
+                Sound.win();
+
+                detonateBtn.style.display = 'none';
+                round++;
+                restartBtn.style.display = 'inline-block';
+                restartBtn.textContent = `Next Round (${round}) ▶`;
+
+                // Disable remaining wires
+                wirePanel.querySelectorAll('.wire').forEach(w => w.onclick = null);
+            } else {
+                // WRONG WIRE — boom!
+                el.classList.add('cut-wrong');
+                setTimeout(() => explode(), 300);
+            }
+        }
 
         detonateBtn.onclick = function () {
             if (exploded) return;
             explode();
-        }
+        };
 
         function explode() {
-            Sound.explode(); // BOOM
+            Sound.explode();
             exploded = true;
             clearInterval(interval);
             timerEl.innerText = "0.00";
-            document.body.style.backgroundColor = "#ffcccc";
-            title.innerText = "BOOM!";
+            document.body.style.backgroundColor = "#2a0000";
+            title.innerText = "💥 BOOM!";
             title.classList.add('boom');
-            btn.style.display = 'none';
+            title.style.color = '#ff4444';
+
+            phase1.style.display = 'none';
+            phase2.style.display = 'none';
             detonateBtn.style.display = 'none';
-            restartBtn.style.display = 'inline-block'; // Also nice to have here
-            restartBtn.classList.remove('btn-primary');
-            restartBtn.classList.add('btn-dark'); // Dark button for dark times
+            restartBtn.style.display = 'none';
+
+            fullRestartBtn.style.display = 'inline-block';
+            fullRestartBtn.textContent = `Play Again (Score: ${score})`;
+
+            if (score > best) {
+                best = score;
+                bestDisplay.textContent = best;
+                localStorage.setItem('dangerBest', best);
+            }
         }
+
+        function fullRestart() {
+            round = 1;
+            score = 0;
+            scoreDisplay.textContent = 0;
+            startRound();
+        }
+
+        // Start first round
+        startRound();
     </script>
 </body>
 

@@ -7,7 +7,6 @@
     <title>Tablet - Drawing Canvas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="index.css">
     <style>
         body {
             overflow: hidden;
@@ -15,35 +14,52 @@
         }
 
         #canvas-container {
-            width: 80%;
-            height: 60vh;
+            width: 85%;
+            height: 62vh;
             margin: 0 auto;
-            border: 4px solid #198754;
+            border: 3px solid #198754;
             border-radius: 1rem;
             background: white;
             position: relative;
             resize: both;
             overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             min-width: 300px;
             min-height: 300px;
         }
 
         canvas {
             display: block;
-            cursor: crosshair;
+            cursor: none;
         }
 
-        .controls {
-            margin-top: 1rem;
+        #brushCursor {
+            position: absolute;
+            border: 2px solid rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 30;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        .toolbar {
+            margin-top: 0.8rem;
             display: flex;
             justify-content: center;
-            gap: 1rem;
+            align-items: center;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
 
         .color-btn {
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             border: 2px solid white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -52,54 +68,105 @@
         }
 
         .color-btn:hover {
-            transform: scale(1.1);
+            transform: scale(1.15);
         }
 
         .color-btn.active {
             border-color: #333;
-            transform: scale(1.2);
+            transform: scale(1.25);
+            box-shadow: 0 0 0 2px #333;
+        }
+
+        .tool-btn {
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tool-btn:hover {
+            border-color: #0d6efd;
+            background: #f0f7ff;
+        }
+
+        .tool-btn.active {
+            border-color: #0d6efd;
+            background: #e7f1ff;
+        }
+
+        .tool-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .shape-preview {
+            position: absolute;
+            pointer-events: none;
+            z-index: 20;
         }
     </style>
 </head>
 
-<body class="text-center p-4">
+<body class="text-center p-3">
     <div class="container">
-        <h1 class="mb-3">Digital Tablet 🎨</h1>
-        <p class="text-muted mb-4">Resize, Glow, Rainbow - Create your masterpiece!</p>
+        <h1 class="mb-2" style="font-size: 1.5rem;">Digital Tablet 🎨</h1>
 
-        <div
-            class="controls mb-3 p-3 bg-white rounded shadow-sm d-flex justify-content-center align-items-center flex-wrap gap-4">
-            <!-- Brush Size -->
-            <div class="d-flex align-items-center">
-                <label class="me-2 fw-bold">Size:</label>
-                <input type="range" class="form-range" min="1" max="50" id="sizeRange" style="width: 150px;">
-                <span id="sizeVal" class="ms-2 badge bg-light text-dark border">5px</span>
+        <!-- Top toolbar: tools and toggles -->
+        <div class="toolbar mb-2">
+            <div class="d-flex align-items-center gap-1">
+                <label class="me-1 fw-bold" style="font-size: 0.8rem;">Size:</label>
+                <input type="range" class="form-range" min="1" max="50" id="sizeRange" style="width: 100px;">
+                <span id="sizeVal" class="badge bg-light text-dark border" style="font-size: 0.7rem;">5px</span>
             </div>
 
-            <div class="vr mx-2"></div>
+            <div class="vr mx-1"></div>
 
-            <!-- Toggles (Reversed: Label then Switch) -->
-            <div class="d-flex align-items-center gap-3">
-                <div class="form-check form-switch form-check-reverse">
-                    <label class="form-check-label fw-bold me-2" for="rainbowSwitch">🌈 Rainbow</label>
-                    <input class="form-check-input" type="checkbox" id="rainbowSwitch">
-                </div>
+            <!-- Drawing Tools -->
+            <button class="tool-btn active" id="toolPen" onclick="setTool('pen', this)" title="Pen">✏️ Pen</button>
+            <button class="tool-btn" id="toolLine" onclick="setTool('line', this)" title="Line">📏 Line</button>
+            <button class="tool-btn" id="toolRect" onclick="setTool('rect', this)" title="Rectangle">⬜ Rect</button>
+            <button class="tool-btn" id="toolCircle" onclick="setTool('circle', this)" title="Circle">⭕ Circle</button>
 
-                <div class="form-check form-switch form-check-reverse">
-                    <label class="form-check-label fw-bold me-2" for="neonSwitch">✨ Neon</label>
-                    <input class="form-check-input" type="checkbox" id="neonSwitch">
-                </div>
+            <div class="vr mx-1"></div>
+
+            <!-- Toggles -->
+            <div class="form-check form-switch form-check-reverse" style="font-size: 0.8rem;">
+                <label class="form-check-label fw-bold me-1" for="fillSwitch">Fill</label>
+                <input class="form-check-input" type="checkbox" id="fillSwitch">
+            </div>
+            <div class="form-check form-switch form-check-reverse" style="font-size: 0.8rem;">
+                <label class="form-check-label fw-bold me-1" for="rainbowSwitch">🌈</label>
+                <input class="form-check-input" type="checkbox" id="rainbowSwitch">
+            </div>
+            <div class="form-check form-switch form-check-reverse" style="font-size: 0.8rem;">
+                <label class="form-check-label fw-bold me-1" for="neonSwitch">✨</label>
+                <input class="form-check-input" type="checkbox" id="neonSwitch">
             </div>
 
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-3" onclick="saveArt()">💾 Save Art</button>
+            <div class="vr mx-1"></div>
+
+            <!-- Undo/Redo -->
+            <button class="tool-btn" id="undoBtn" onclick="undo()" title="Undo (Ctrl+Z)" disabled>↩️</button>
+            <button class="tool-btn" id="redoBtn" onclick="redo()" title="Redo (Ctrl+Y)" disabled>↪️</button>
+
+            <div class="vr mx-1"></div>
+
+            <button class="tool-btn" onclick="saveArt()">💾 Save</button>
         </div>
 
         <div id="canvas-container">
             <canvas id="drawingCanvas"></canvas>
+            <div id="brushCursor"></div>
         </div>
 
-        <div class="controls mt-3 d-flex flex-wrap justify-content-center gap-2">
-            <!-- Colors -->
+        <!-- Bottom toolbar: colors -->
+        <div class="toolbar mt-2 d-flex justify-content-center gap-1 flex-wrap">
             <div class="color-btn active" style="background: #000;" onclick="setColor('#000', this)" title="Black">
             </div>
             <div class="color-btn" style="background: #6c757d;" onclick="setColor('#6c757d', this)" title="Gray"></div>
@@ -114,19 +181,16 @@
             <div class="color-btn" style="background: #6610f2;" onclick="setColor('#6610f2', this)" title="Purple">
             </div>
             <div class="color-btn" style="background: #d63384;" onclick="setColor('#d63384', this)" title="Pink"></div>
+            <div class="color-btn" style="background: #fff; border-color: #ccc;" onclick="setColor('#ffffff', this)"
+                title="White"></div>
 
-            <div class="vr mx-2"></div>
+            <div class="vr mx-1"></div>
 
-            <!-- Eraser -->
-            <button class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="setEraser(this)"
-                id="eraserBtn">
-                <span class="fs-5 me-1">🧼</span> Eraser
-            </button>
-
-            <button class="btn btn-outline-danger btn-sm ms-2" onclick="clearCanvas()">Clear All</button>
+            <button class="tool-btn" onclick="setEraser()" id="eraserBtn">🧼 Eraser</button>
+            <button class="tool-btn" style="color: #dc3545;" onclick="clearCanvas()">🗑️ Clear</button>
         </div>
 
-        <a href="index.html" class="btn btn-secondary mt-4">Back to Home</a>
+        <a href="index.html" class="btn btn-secondary mt-3" style="font-size: 0.85rem;">Back to Home</a>
     </div>
 
     <script src="sound.js"></script>
@@ -138,17 +202,30 @@
         const sizeVal = document.getElementById('sizeVal');
         const rainbowSwitch = document.getElementById('rainbowSwitch');
         const neonSwitch = document.getElementById('neonSwitch');
+        const fillSwitch = document.getElementById('fillSwitch');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
 
         let isDrawing = false;
         let currentColor = '#000';
         let isEraser = false;
         let hue = 0;
+        let currentTool = 'pen'; // pen, line, rect, circle
 
-        // Load sizes from storage or defaults
-        let brushSize = localStorage.getItem('brushSize') || 5;
-        let eraserSize = localStorage.getItem('eraserSize') || 20;
+        // Separate brush/eraser sizes
+        let brushSize = parseInt(localStorage.getItem('brushSize')) || 5;
+        let eraserSize = parseInt(localStorage.getItem('eraserSize')) || 20;
 
-        // Initialize UI
+        // Shape drawing state
+        let shapeStartX = 0, shapeStartY = 0;
+        let shapeEndX = 0, shapeEndY = 0;
+        let shapePreviewCanvas = null;
+
+        // Undo/Redo stack
+        const MAX_HISTORY = 30;
+        let undoStack = [];
+        let redoStack = [];
+
         function updateSliderUI() {
             const val = isEraser ? eraserSize : brushSize;
             sizeRange.value = val;
@@ -156,7 +233,7 @@
         }
         updateSliderUI();
 
-        // Resize canvas to fit container
+        // === Canvas Resize ===
         function resizeCanvas() {
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
@@ -167,7 +244,6 @@
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
 
-            // Restore drawing
             ctx.drawImage(tempCanvas, 0, 0);
             updateContext();
         }
@@ -177,109 +253,293 @@
             ctx.lineJoin = 'round';
         }
 
-        // Initial resize
         resizeCanvas();
+        updateContext();
+        ctx.lineWidth = sizeRange.value;
         new ResizeObserver(resizeCanvas).observe(container);
 
-        // Drawing Logic
-        function startDraw(e) {
-            isDrawing = true;
-            ctx.beginPath();
-            draw(e);
-            if (!isEraser) Sound.click(); // Tiny feedback
+        // Save initial blank state
+        setTimeout(() => saveState(), 100);
+
+        // === Undo / Redo ===
+        function saveState() {
+            try {
+                const data = canvas.toDataURL();
+                undoStack.push(data);
+                if (undoStack.length > MAX_HISTORY) undoStack.shift();
+                redoStack = [];
+                updateUndoRedoButtons();
+            } catch (e) { /* ignore */ }
         }
 
-        function endDraw() {
-            isDrawing = false;
-            ctx.beginPath();
+        function undo() {
+            if (undoStack.length <= 1) return;
+            const current = undoStack.pop();
+            redoStack.push(current);
+            restoreState(undoStack[undoStack.length - 1]);
+            updateUndoRedoButtons();
         }
 
-        function draw(e) {
-            if (!isDrawing) return;
+        function redo() {
+            if (redoStack.length === 0) return;
+            const state = redoStack.pop();
+            undoStack.push(state);
+            restoreState(state);
+            updateUndoRedoButtons();
+        }
 
-            // Browser zoom scaling fix
+        function restoreState(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                updateContext();
+            };
+            img.src = dataUrl;
+        }
+
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = undoStack.length <= 1;
+            redoBtn.disabled = redoStack.length === 0;
+        }
+
+        // === Coordinate helpers ===
+        function getCoords(e) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
+            const clientX = e.clientX !== undefined ? e.clientX : (e.touches ? e.touches[0].clientX : e.changedTouches[0].clientX);
+            const clientY = e.clientY !== undefined ? e.clientY : (e.touches ? e.touches[0].clientY : e.changedTouches[0].clientY);
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
 
-            const x = ((e.clientX || e.touches[0].clientX) - rect.left) * scaleX;
-            const y = ((e.clientY || e.touches[0].clientY) - rect.top) * scaleY;
-
-            // Styles
-            // Always use the current slider value, but technically the slider represents the current tool's size
+        // === Drawing Styles ===
+        function applyStyles() {
             ctx.lineWidth = sizeRange.value;
 
             if (isEraser) {
-                // Eraser mode
                 ctx.globalCompositeOperation = "destination-out";
                 ctx.strokeStyle = "rgba(0,0,0,1)";
+                ctx.fillStyle = "rgba(0,0,0,1)";
                 ctx.shadowBlur = 0;
             } else {
                 ctx.globalCompositeOperation = "source-over";
 
+                let color = currentColor;
                 if (rainbowSwitch.checked) {
-                    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
-                    hue = (hue + 1) % 360;
-                } else {
-                    ctx.strokeStyle = currentColor;
+                    color = `hsl(${hue}, 100%, 50%)`;
+                    hue = (hue + 2) % 360;
                 }
+
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
 
                 if (neonSwitch.checked) {
                     ctx.shadowBlur = 15;
-                    ctx.shadowColor = ctx.strokeStyle;
+                    ctx.shadowColor = color;
                 } else {
                     ctx.shadowBlur = 0;
                 }
             }
-
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x, y);
         }
 
-        // Mouse Events
+        // === Pen Drawing ===
+        function startDraw(e) {
+            isDrawing = true;
+            const { x, y } = getCoords(e);
+
+            if (currentTool === 'pen') {
+                ctx.beginPath();
+                applyStyles();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                if (!isEraser) Sound.click();
+            } else {
+                // Shape tools: remember start point
+                shapeStartX = x;
+                shapeStartY = y;
+                // Save canvas state for shape preview
+                shapePreviewCanvas = document.createElement('canvas');
+                shapePreviewCanvas.width = canvas.width;
+                shapePreviewCanvas.height = canvas.height;
+                shapePreviewCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const { x, y } = getCoords(e);
+
+            if (currentTool === 'pen') {
+                applyStyles();
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            } else {
+                // Shape preview: restore base canvas + draw preview shape
+                shapeEndX = x;
+                shapeEndY = y;
+                if (shapePreviewCanvas) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(shapePreviewCanvas, 0, 0);
+                }
+                drawShapePreview(shapeStartX, shapeStartY, x, y);
+            }
+        }
+
+        function endDraw(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (currentTool === 'pen') {
+                ctx.beginPath();
+            } else {
+                // Finalize shape
+                if (shapePreviewCanvas) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(shapePreviewCanvas, 0, 0);
+                    shapePreviewCanvas = null;
+                }
+                if (e) {
+                    const { x, y } = getCoords(e);
+                    drawShapeFinal(shapeStartX, shapeStartY, x, y);
+                }
+                Sound.click();
+            }
+
+            saveState();
+        }
+
+        function drawShapePreview(x1, y1, x2, y2) {
+            applyStyles();
+            ctx.setLineDash([5, 5]);
+            ctx.globalAlpha = 0.7;
+            drawShape(x1, y1, x2, y2, false);
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
+            updateContext();
+        }
+
+        function drawShapeFinal(x1, y1, x2, y2) {
+            applyStyles();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
+            const useFill = fillSwitch.checked && !isEraser;
+            drawShape(x1, y1, x2, y2, useFill);
+            updateContext();
+        }
+
+        function drawShape(x1, y1, x2, y2, fill) {
+            ctx.beginPath();
+
+            switch (currentTool) {
+                case 'line':
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                    break;
+                case 'rect':
+                    if (fill) {
+                        ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+                    }
+                    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                    break;
+                case 'circle':
+                    const radius = Math.hypot(x2 - x1, y2 - y1);
+                    ctx.arc(x1, y1, radius, 0, Math.PI * 2);
+                    if (fill) ctx.fill();
+                    ctx.stroke();
+                    break;
+            }
+        }
+
+        // === Brush Cursor ===
+        const brushCursor = document.getElementById('brushCursor');
+
+        function updateBrushCursor(e) {
+            const rect = container.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            const size = parseInt(sizeRange.value);
+            brushCursor.style.width = size + 'px';
+            brushCursor.style.height = size + 'px';
+            brushCursor.style.left = mx + 'px';
+            brushCursor.style.top = my + 'px';
+            brushCursor.style.display = 'block';
+
+            // Color the cursor
+            if (isEraser) {
+                brushCursor.style.borderColor = 'rgba(150, 150, 150, 0.7)';
+            } else if (rainbowSwitch.checked) {
+                brushCursor.style.borderColor = `hsl(${hue}, 100%, 50%)`;
+            } else {
+                brushCursor.style.borderColor = currentColor;
+            }
+        }
+
+        // === Event Listeners ===
         canvas.addEventListener('mousedown', startDraw);
         canvas.addEventListener('mouseup', endDraw);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseleave', endDraw);
+        canvas.addEventListener('mousemove', (e) => { draw(e); updateBrushCursor(e); });
+        canvas.addEventListener('mouseleave', (e) => { endDraw(e); brushCursor.style.display = 'none'; });
+        canvas.addEventListener('mouseenter', (e) => { updateBrushCursor(e); });
 
-        // Touch Events
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); });
-        canvas.addEventListener('touchend', endDraw);
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); endDraw(e); });
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
 
-        // Controls
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+            if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+        });
+
+        // === Tool Controls ===
+        function setTool(tool, btn) {
+            currentTool = tool;
+            isEraser = false;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('eraserBtn').classList.remove('active');
+            btn.classList.add('active');
+            updateSliderUI();
+
+        }
+
         function setColor(color, btn) {
             Sound.click();
             isEraser = false;
             currentColor = color;
             rainbowSwitch.checked = false;
             ctx.globalCompositeOperation = "source-over";
-
-            // Switch slider to saved brush size
             updateSliderUI();
-
-            // Visuals
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('eraserBtn').classList.remove('active');
             btn.classList.add('active');
+            // Re-activate pen tool button
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tool' + currentTool.charAt(0).toUpperCase() + currentTool.slice(1)).classList.add('active');
         }
 
-        function setEraser(btn) {
+        function setEraser() {
             Sound.click();
             isEraser = true;
-
-            // Switch slider to saved eraser size
+            currentTool = 'pen';
             updateSliderUI();
-
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('eraserBtn').classList.add('active');
+
         }
 
         function clearCanvas() {
             Sound.snap();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            saveState();
         }
 
         function saveArt() {
@@ -288,11 +548,9 @@
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
             const tempCtx = tempCanvas.getContext('2d');
-
             tempCtx.fillStyle = '#ffffff';
             tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
             tempCtx.drawImage(canvas, 0, 0);
-
             const link = document.createElement('a');
             link.download = 'my-masterpiece.png';
             link.href = tempCanvas.toDataURL();
@@ -300,10 +558,8 @@
         }
 
         sizeRange.addEventListener('input', (e) => {
-            const val = e.target.value;
+            const val = parseInt(e.target.value);
             sizeVal.innerText = val + 'px';
-
-            // Save to correct variable and storage
             if (isEraser) {
                 eraserSize = val;
                 localStorage.setItem('eraserSize', val);

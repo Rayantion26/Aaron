@@ -10,20 +10,33 @@
     <style>
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            max-width: 400px;
+            gap: 12px;
+            max-width: 500px;
             margin: 0 auto;
         }
 
-        /* Updated Tile Styles for better visibility */
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+            max-width: 360px;
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+            max-width: 420px;
+        }
+
+        .grid-5 {
+            grid-template-columns: repeat(5, 1fr);
+            max-width: 500px;
+        }
+
         .tile {
             aspect-ratio: 1;
-            border-radius: 15px;
+            border-radius: 14px;
             cursor: pointer;
             transition: all 0.2s;
-            border: 4px solid transparent;
-            opacity: 0.8;
+            border: 3px solid transparent;
+            opacity: 0.75;
         }
 
         .tile:active {
@@ -38,7 +51,6 @@
             z-index: 10;
         }
 
-        /* Unclickable state when sequence is playing */
         .game-grid.playing {
             pointer-events: none;
             cursor: not-allowed;
@@ -50,42 +62,139 @@
         }
 
         .status-text {
-            height: 24px;
+            height: 30px;
+            font-weight: bold;
+        }
+
+        /* Combo popup */
+        .combo-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            font-size: 3rem;
+            font-weight: 900;
+            pointer-events: none;
+            z-index: 100;
+            animation: comboAnim 1s ease-out forwards;
+        }
+
+        @keyframes comboAnim {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.3);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -60%) scale(1);
+            }
+        }
+
+        /* Setup panel */
+        .setup-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .diff-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid #dee2e6;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 8px;
+        }
+
+        .diff-btn:hover {
+            border-color: #0d6efd;
+            transform: scale(1.02);
+        }
+
+        .diff-btn.selected-diff {
+            border-color: #0d6efd;
+            background: #e7f1ff;
+        }
+
+        .high-score-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.75rem;
             font-weight: bold;
         }
     </style>
 </head>
 
 <body class="text-center p-4">
-    <div class="container py-5 text-center">
-        <h1 class="mb-4">Memory Matrix 🧠</h1>
+    <div class="container py-3 text-center">
+        <h1 class="mb-3">Memory Matrix 🧠</h1>
 
-        <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-2 px-3">
-                <h3 class="m-0">Score: <span id="score">0</span></h3>
-                <h3 class="m-0 text-warning">Replays: <span id="replays">3</span></h3>
-                <h3 class="m-0 text-danger">Lives: <span id="lives">❤️❤️❤️</span></h3>
+        <!-- Setup Screen -->
+        <div id="setupScreen">
+            <div class="setup-card">
+                <h3 class="mb-3">Choose Difficulty</h3>
+                <div class="diff-btn selected-diff" onclick="selectDiff(3, this)" id="diff3">
+                    <strong>😊 Easy</strong> — 3×3 Grid (9 tiles)
+                    <div class="mt-1"><span class="high-score-badge" id="hs3">Best: 0</span></div>
+                </div>
+                <div class="diff-btn" onclick="selectDiff(4, this)" id="diff4">
+                    <strong>🤔 Medium</strong> — 4×4 Grid (16 tiles)
+                    <div class="mt-1"><span class="high-score-badge" id="hs4">Best: 0</span></div>
+                </div>
+                <div class="diff-btn" onclick="selectDiff(5, this)" id="diff5">
+                    <strong>🤯 Hard</strong> — 5×5 Grid (25 tiles)
+                    <div class="mt-1"><span class="high-score-badge" id="hs5">Best: 0</span></div>
+                </div>
+                <button class="btn btn-primary btn-lg rounded-pill px-5 mt-3 fw-bold" onclick="startGame()">
+                    Start Game ▶
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen (hidden initially) -->
+        <div id="gameScreen" style="display: none;">
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2 px-3 flex-wrap gap-2">
+                    <h3 class="m-0">Score: <span id="score">0</span></h3>
+                    <h3 class="m-0" id="streakDisplay" style="color: #ff6b35; display: none;">🔥 <span
+                            id="streakCount">0</span></h3>
+                    <h3 class="m-0 text-warning">Replays: <span id="replays">3</span></h3>
+                    <h3 class="m-0 text-danger">Lives: <span id="lives">❤️❤️❤️</span></h3>
+                </div>
+
+                <div class="progress mb-3" style="height: 10px; opacity: 0;" id="timerContainer">
+                    <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" id="timerBar"
+                        style="width: 100%"></div>
+                </div>
+
+                <div id="status" class="status-text text-primary fs-4">Watch carefully...</div>
             </div>
 
-            <!-- Timer Bar -->
-            <div class="progress mb-3" style="height: 10px; opacity: 0;" id="timerContainer">
-                <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" id="timerBar"
-                    style="width: 100%"></div>
+            <div class="game-grid mb-4" id="grid">
+                <!-- Tiles generated by JS -->
             </div>
 
-            <div id="status" class="status-text text-primary fs-4">Press Start to Play!</div>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <button id="replayBtn" class="btn btn-warning btn-lg rounded-pill px-4" style="display: none;"
+                    onclick="replaySequence()">Replay ↺</button>
+                <button class="btn btn-outline-secondary rounded-pill px-4" onclick="showSetup()">New Game</button>
+            </div>
         </div>
 
-        <div class="game-grid mb-5" id="grid">
-            <!-- Tiles generated by JS -->
-        </div>
-
-        <div class="d-flex justify-content-center gap-2">
-            <button id="startBtn" class="btn btn-primary btn-lg rounded-pill px-5" onclick="startGame()">Start
-                Game</button>
-            <button id="replayBtn" class="btn btn-warning btn-lg rounded-pill px-5" style="display: none;"
-                onclick="replaySequence()">Replay ↺</button>
-        </div>
         <a href="index.html" class="btn btn-secondary mt-3 d-block mx-auto" style="max-width: 200px;">Back to Home</a>
     </div>
 
@@ -96,89 +205,167 @@
         const livesEl = document.getElementById('lives');
         const replaysEl = document.getElementById('replays');
         const statusEl = document.getElementById('status');
-        const startBtn = document.getElementById('startBtn');
         const replayBtn = document.getElementById('replayBtn');
         const timerContainer = document.getElementById('timerContainer');
         const timerBar = document.getElementById('timerBar');
+        const streakDisplay = document.getElementById('streakDisplay');
+        const streakCount = document.getElementById('streakCount');
 
-        let colors = [
-            '#ffc107', '#0d6efd', '#dc3545', '#198754', '#6610f2',
-            '#fd7e14', '#0dcaf0', '#d63384', '#20c997'
-        ];
+        let gridSize = 3;
+        let tileCount = 9;
 
-        // Tones for each position (pentatonic-ish)
-        const tones = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33];
+        // Color pools
+        const colorPools = {
+            9: ['#ffc107', '#0d6efd', '#dc3545', '#198754', '#6610f2', '#fd7e14', '#0dcaf0', '#d63384', '#20c997'],
+            16: ['#ffc107', '#0d6efd', '#dc3545', '#198754', '#6610f2', '#fd7e14', '#0dcaf0', '#d63384',
+                '#20c997', '#6c757d', '#e91e63', '#00bcd4', '#8bc34a', '#ff5722', '#9c27b0', '#795548'],
+            25: ['#ffc107', '#0d6efd', '#dc3545', '#198754', '#6610f2', '#fd7e14', '#0dcaf0', '#d63384',
+                '#20c997', '#6c757d', '#e91e63', '#00bcd4', '#8bc34a', '#ff5722', '#9c27b0',
+                '#795548', '#607d8b', '#cddc39', '#ff9800', '#3f51b5', '#009688', '#e040fb',
+                '#76ff03', '#f44336', '#2196f3']
+        };
 
+        // Tones (pentatonic scale, extended)
+        const baseTones = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33,
+            659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66,
+            293.66 * 2, 329.63 * 2, 349.23 * 2, 392.00 * 2, 440.00 * 2, 493.88 * 2, 523.25 * 2, 587.33 * 2, 659.25 * 2];
+
+        let colors = [];
+        let tones = [];
         let sequence = [];
         let playerSequence = [];
         let score = 0;
         let lives = 3;
         let replays = 3;
-        let roundsPassed = 0;
+        let streak = 0;
         let isPlaying = false;
         let canClick = false;
-        let roundTime = 10000; // Starting time per round (ms)
-        let flashSpeed = 800; // Starting flash interval (ms)
+        let roundTime = 10000;
+        let flashSpeed = 800;
         let timerInterval;
-        let startTime;
 
-        // Create Grid
-        function createGrid() {
-            grid.innerHTML = '';
-            // Shuffle colors for "change color every turn" effect if requested, or just initial setup
-            // User asked "Change color every turn", let's shuffle on every round start
-            colors.forEach((color, i) => {
-                const tile = document.createElement('div');
-                tile.className = 'tile';
-                tile.dataset.index = i;
-                tile.style.backgroundColor = color; // Initial color
-                tile.style.color = color; // Used for box-shadow currentColor
-                tile.onclick = () => handleTileClick(i);
-                grid.appendChild(tile);
-            });
+        // High scores
+        function getHighScore(size) {
+            return parseInt(localStorage.getItem(`memory_hs_${size}`)) || 0;
         }
-        createGrid(); // Initial
+        function setHighScore(size, val) {
+            localStorage.setItem(`memory_hs_${size}`, val);
+        }
 
-        function shuffleColors() {
-            // Fisher-Yates shuffle
-            for (let i = colors.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [colors[i], colors[j]] = [colors[j], colors[i]];
-            }
-            // Apply new colors
-            const tiles = document.querySelectorAll('.tile');
-            tiles.forEach((tile, i) => {
-                tile.style.backgroundColor = colors[i];
-                tile.style.color = colors[i];
-            });
+        // Load high scores into setup
+        function loadHighScores() {
+            document.getElementById('hs3').textContent = `Best: ${getHighScore(3)}`;
+            document.getElementById('hs4').textContent = `Best: ${getHighScore(4)}`;
+            document.getElementById('hs5').textContent = `Best: ${getHighScore(5)}`;
+        }
+        loadHighScores();
+
+        let selectedDiff = 3;
+        function selectDiff(size, el) {
+            selectedDiff = size;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected-diff'));
+            el.classList.add('selected-diff');
+        }
+
+        function showSetup() {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'block';
+            isPlaying = false;
+            canClick = false;
+            clearInterval(timerInterval);
+            loadHighScores();
         }
 
         function startGame() {
+            gridSize = selectedDiff;
+            tileCount = gridSize * gridSize;
+            colors = colorPools[tileCount].slice();
+            tones = baseTones.slice(0, tileCount);
+
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+
             Sound.startObj();
             sequence = [];
             playerSequence = [];
             score = 0;
             lives = 3;
             replays = 3;
-            roundsPassed = 0;
-            roundTime = 10000; // Reset time difficulty
-            flashSpeed = 800; // Reset speed difficulty
+            streak = 0;
+            roundTime = 10000;
+            flashSpeed = 800;
             scoreEl.innerText = score;
             updateLives();
             updateReplays();
+            updateStreak();
             isPlaying = true;
-            startBtn.style.display = 'none';
             replayBtn.style.display = 'none';
             statusEl.innerText = "Watch carefully...";
 
-            shuffleColors(); // Shuffle start
+            // Set grid class
+            grid.className = `game-grid mb-4 grid-${gridSize}`;
+
+            shuffleColors();
+            createGrid();
             setTimeout(nextRound, 1000);
+        }
+
+        function createGrid() {
+            grid.innerHTML = '';
+            for (let i = 0; i < tileCount; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.dataset.index = i;
+                tile.style.backgroundColor = colors[i];
+                tile.style.color = colors[i];
+                tile.onclick = () => handleTileClick(i);
+                grid.appendChild(tile);
+            }
+        }
+
+        function shuffleColors() {
+            for (let i = colors.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colors[i], colors[j]] = [colors[j], colors[i]];
+            }
+            const tiles = document.querySelectorAll('.tile');
+            tiles.forEach((tile, i) => {
+                if (i < colors.length) {
+                    tile.style.backgroundColor = colors[i];
+                    tile.style.color = colors[i];
+                }
+            });
         }
 
         function updateLives() {
             let hearts = "";
             for (let i = 0; i < lives; i++) hearts += "❤️";
-            livesEl.innerText = hearts;
+            livesEl.innerText = hearts || "💀";
+        }
+
+        function updateReplays() {
+            replaysEl.innerText = replays;
+            if (canClick && replays > 0) replayBtn.disabled = false;
+            else replayBtn.disabled = true;
+        }
+
+        function updateStreak() {
+            if (streak >= 3) {
+                streakDisplay.style.display = 'inline';
+                streakCount.textContent = streak;
+            } else {
+                streakDisplay.style.display = 'none';
+            }
+        }
+
+        function showCombo(text, color) {
+            const el = document.createElement('div');
+            el.className = 'combo-popup';
+            el.textContent = text;
+            el.style.color = color;
+            el.style.textShadow = `0 0 30px ${color}`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
         }
 
         function nextRound() {
@@ -187,69 +374,44 @@
             stopTimer();
             timerContainer.style.opacity = 0;
             statusEl.innerText = "Watch carefully...";
-            statusEl.style.color = "#0d6efd"; // Reset color
+            statusEl.style.color = "#0d6efd";
 
-            // Visual lock
             grid.classList.add('playing');
-            replayBtn.style.display = 'none'; // Hide replay during sequence playback
+            replayBtn.style.display = 'none';
 
-            // Randomly shuffle colors EVERY turn if that's what user wanted?
-            // "change th color every turn" -> Yes, let's do it for max confusion/fun
             shuffleColors();
+            createGrid();
 
-            // NEW: Generate a completely fresh sequence based on current level
-            // Level 1 = 1 step, Level 2 = 2 steps, etc.
-            // Score starts at 0, so length = score + 1
+            // Generate fresh sequence
             const sequenceLength = score + 1;
             sequence = [];
             for (let k = 0; k < sequenceLength; k++) {
-                sequence.push(Math.floor(Math.random() * 9));
+                sequence.push(Math.floor(Math.random() * tileCount));
             }
 
-            // Reduce time for next turn (game gets faster)
-            if (roundTime > 3000) roundTime -= 500;
-
-            // Speed up the sequence playback (harder!)
-            if (flashSpeed > 300) flashSpeed -= 50;
-
-            // Play sequence
-            // Recursive setTimeout instead of setInterval to handle variable speed if we wanted dynamic within round,
-            // but for round-based fixed speed, setInterval is fine. Wait... setInterval interval cannot be changed while running.
-            // But we recreate the interval every round, so it picks up the NEW flashSpeed.
+            if (roundTime > 3000) roundTime -= 400;
+            if (flashSpeed > 250) flashSpeed -= 40;
 
             playSequenceStep(0);
         }
 
         function playSequenceStep(i) {
             if (i >= sequence.length) {
-                setTimeout(() => {
-                    startPlayerTurn();
-                }, 500);
+                setTimeout(startPlayerTurn, 500);
                 return;
             }
-
             flashTile(sequence[i]);
-
-            // Schedule next step
-            setTimeout(() => {
-                playSequenceStep(i + 1);
-            }, flashSpeed);
+            setTimeout(() => playSequenceStep(i + 1), flashSpeed);
         }
-
 
         function startPlayerTurn() {
             canClick = true;
-            // Remove visual lock
             grid.classList.remove('playing');
-
             statusEl.innerText = "Your Turn!";
             startTimer();
-            // Start fresh sequence check for this turn
             playerSequence = [];
-
-            // Show replay button
             replayBtn.style.display = 'inline-block';
-            replayBtn.disabled = replays <= 0;
+            updateReplays();
         }
 
         function startTimer() {
@@ -263,36 +425,29 @@
                 const elapsed = Date.now() - start;
                 const remaining = roundTime - elapsed;
                 const pct = (remaining / roundTime) * 100;
-
                 timerBar.style.width = pct + "%";
 
                 if (remaining <= 3000) {
                     timerBar.classList.remove('bg-warning');
-                    timerBar.classList.add('bg-danger'); // Panic mode
+                    timerBar.classList.add('bg-danger');
                 }
 
                 if (remaining <= 0) {
                     clearInterval(timerInterval);
-                    handleMistake("Time's Up!");
+                    handleMistake("⏰ Time's Up!");
                 }
             }, 50);
         }
 
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
+        function stopTimer() { clearInterval(timerInterval); }
 
         function flashTile(index) {
             const tiles = document.querySelectorAll('.tile');
+            if (index >= tiles.length) return;
             const tile = tiles[index];
             tile.classList.add('active');
-            Sound.note(tones[index]);
-
-            // Flash duration should be proportional to speed, maybe half?
-            // If speed is 300ms, flash needs to be short.
-            setTimeout(() => {
-                tile.classList.remove('active');
-            }, flashSpeed * 0.6);
+            if (index < tones.length) Sound.note(tones[index]);
+            setTimeout(() => tile.classList.remove('active'), flashSpeed * 0.6);
         }
 
         function handleTileClick(index) {
@@ -301,33 +456,44 @@
             flashTile(index);
             playerSequence.push(index);
 
-            // Check specific step correctness
             if (playerSequence[playerSequence.length - 1] !== sequence[playerSequence.length - 1]) {
-                handleMistake("Wrong Tile!");
+                streak = 0;
+                updateStreak();
+                handleMistake("❌ Wrong Tile!");
                 return;
             }
 
-            // Check if round complete
             if (playerSequence.length === sequence.length) {
                 stopTimer();
                 score++;
+                streak++;
                 scoreEl.innerText = score;
+                updateStreak();
 
-                // Earn replay logic
-                roundsPassed++;
-                if (roundsPassed % 3 === 0) {
+                // Check high score
+                const hs = getHighScore(gridSize);
+                if (score > hs) setHighScore(gridSize, score);
+
+                // Combo feedback
+                if (streak >= 5) {
+                    showCombo(`🔥 x${streak}!`, '#ff4500');
+                } else if (streak >= 3) {
+                    showCombo(`x${streak}!`, '#ff6b35');
+                }
+
+                // Earn replay every 3 rounds
+                if (score % 3 === 0) {
                     replays++;
                     updateReplays();
-                    // Optional: Visual cue for earning
                     replaysEl.style.color = '#198754';
                     setTimeout(() => replaysEl.style.color = '', 1000);
                 }
 
                 canClick = false;
-                grid.classList.add('playing'); // Lock immediately on win
-                statusEl.innerText = "Good job!";
-                statusEl.style.color = "#198754"; // Green
-                Sound.win(); // Little arpeggio
+                grid.classList.add('playing');
+                statusEl.innerText = streak >= 3 ? `🔥 ${streak}x Streak!` : "✅ Good job!";
+                statusEl.style.color = "#198754";
+                Sound.win();
                 setTimeout(nextRound, 1000);
             }
         }
@@ -339,13 +505,10 @@
             canClick = false;
             stopTimer();
 
-            // Lock
             grid.classList.add('playing');
-
             statusEl.innerText = msg;
-            statusEl.style.color = "#dc3545"; // Red
+            statusEl.style.color = "#dc3545";
 
-            const tiles = document.querySelectorAll('.tile');
             grid.style.transform = "translateX(10px)";
             setTimeout(() => grid.style.transform = "translateX(-10px)", 50);
             setTimeout(() => grid.style.transform = "none", 100);
@@ -353,25 +516,10 @@
             if (lives <= 0) {
                 gameOver();
             } else {
-                // Formatting lives
                 setTimeout(() => {
                     statusEl.innerText = "Replaying Sequence...";
-                    setTimeout(() => {
-                        // Replay sequence logic (using recursive for consistency with new playSequenceStep)
-                        playSequenceStep(0);
-                        // IMPORTANT: startPlayerTurn will be called at end of playback,
-                        // which will wipe playerSequence = [] and unlock UI.
-                    }, 1000);
+                    setTimeout(() => playSequenceStep(0), 1000);
                 }, 1000);
-            }
-        }
-
-        function updateReplays() {
-            replaysEl.innerText = replays;
-            if (replays > 0 && canClick) {
-                replayBtn.disabled = false;
-            } else {
-                replayBtn.disabled = true;
             }
         }
 
@@ -379,18 +527,12 @@
             if (replays <= 0 || !canClick) return;
             replays--;
             updateReplays();
-
             canClick = false;
             replayBtn.disabled = true;
-            stopTimer(); // Pause timer while replaying? Or keep it running? 
-            // Usually replay uses time, but let's pause it to be fair or restart it after.
-            // Let's pause visual timer but "penalty" is using the replay stock.
-            // Actually implementation plan didn't specify timer behavior, but pausing seems fair.
+            stopTimer();
             timerContainer.style.opacity = 0.5;
-
             statusEl.innerText = "Replaying...";
             grid.classList.add('playing');
-
             playSequenceStep(0);
         }
 
@@ -398,10 +540,13 @@
             isPlaying = false;
             canClick = false;
             stopTimer();
-            grid.classList.remove('playing'); // Unlock maybe? Or keep locked.
-            statusEl.innerHTML = `<span class="text-danger fw-bold">GAME OVER! Score: ${score}</span>`;
-            startBtn.innerText = "Play Again";
-            startBtn.style.display = 'inline-block';
+
+            const hs = getHighScore(gridSize);
+            const isNewBest = score > 0 && score >= hs;
+
+            statusEl.innerHTML = `<span class="text-danger fw-bold">GAME OVER!</span> Score: ${score}` +
+                (isNewBest ? ' <span class="high-score-badge">🏆 NEW BEST!</span>' : '');
+
             replayBtn.style.display = 'none';
         }
     </script>

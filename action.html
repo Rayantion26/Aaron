@@ -7,7 +7,6 @@
     <title>Action - Gravity Ball</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="index.css">
     <style>
         body {
             overflow: hidden;
@@ -16,8 +15,8 @@
 
         #gameArea {
             width: 100%;
-            height: 60vh;
-            background: #e9ecef;
+            height: 58vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             border-radius: 1rem;
             position: relative;
             cursor: pointer;
@@ -26,12 +25,14 @@
         }
 
         .ball {
-            width: 60px;
-            height: 60px;
-            background: #0d6efd;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 35% 35%, #5dade2, #0d6efd, #1b4f72);
             border-radius: 50%;
             position: absolute;
-            box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 15px rgba(13, 110, 253, 0.6);
+            transition: background 0.3s, box-shadow 0.3s;
+            z-index: 10;
         }
 
         .instruction {
@@ -39,85 +40,657 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #6c757d;
+            color: rgba(255, 255, 255, 0.4);
             pointer-events: none;
             user-select: none;
+            font-size: 1.5rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 0.6rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+            color: #fff;
+        }
+
+        .stat .label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .stat .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        /* Star target */
+        .target-zone {
+            position: absolute;
+            border-radius: 50%;
+            border: 3px dashed rgba(255, 215, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: targetPulse 1s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        /* Bomb target */
+        .target-bomb {
+            position: absolute;
+            border-radius: 50%;
+            border: 3px dashed rgba(255, 60, 60, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            animation: bombPulse 0.6s ease-in-out infinite alternate;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.08) 0%, transparent 70%);
+        }
+
+        .bomb-inner {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bomb-inner .cracked-star {
+            font-size: 2rem;
+            opacity: 0.4;
+            filter: hue-rotate(0deg);
+        }
+
+        .bomb-inner .bomb-icon {
+            position: absolute;
+            font-size: 1rem;
+        }
+
+        @keyframes targetPulse {
+            from {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            to {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes bombPulse {
+            from {
+                transform: scale(1) rotate(-3deg);
+                opacity: 0.7;
+            }
+
+            to {
+                transform: scale(1.1) rotate(3deg);
+                opacity: 1;
+            }
+        }
+
+        /* Particle */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Speed bar */
+        .speed-bar-container {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 120px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            overflow: hidden;
+            z-index: 20;
+        }
+
+        .speed-bar {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.1s, background 0.1s;
+        }
+
+        /* Bonus popup */
+        .bonus-popup {
+            position: absolute;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 1.5rem;
+            pointer-events: none;
+            z-index: 30;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-60px) scale(1.5);
+            }
+        }
+
+        /* Level banner */
+        .level-banner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            font-size: 3rem;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            pointer-events: none;
+            z-index: 50;
+            animation: levelUp 1.5s ease-out forwards;
+        }
+
+        @keyframes levelUp {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.3);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+
+            70% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -60%) scale(0.8);
+            }
+        }
+
+        /* Timer bar */
+        .timer-bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 25;
+        }
+
+        .timer-bar {
+            height: 100%;
+            background: #ffd700;
+            transition: width 0.5s linear, background 0.3s;
         }
     </style>
 </head>
 
 <body class="text-center p-4">
     <div class="container">
-        <h1 class="mb-4">Gravity Ball</h1>
-        <div id="gameArea">
-            <div class="instruction">Click to Kick!</div>
-            <div id="ball" class="ball" style="left: 50%; top: 50%;"></div>
+        <h1 class="mb-2" style="color: #fff; font-size: 1.6rem;">Gravity Ball 🎈</h1>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="label">Level</div>
+                <div class="value" id="levelDisplay" style="color: #ffd700;">1</div>
+            </div>
+            <div class="stat">
+                <div class="label">Score</div>
+                <div class="value" id="scoreDisplay" style="color: #ffd700;">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Goal</div>
+                <div class="value" id="goalDisplay" style="color: #5dade2;">50</div>
+            </div>
+            <div class="stat">
+                <div class="label">Time</div>
+                <div class="value" id="timeDisplay">60s</div>
+            </div>
+            <div class="stat">
+                <div class="label">Kicks</div>
+                <div class="value" id="kickCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Best Lvl</div>
+                <div class="value" id="bestLevel" style="color: #20c997;">1</div>
+            </div>
         </div>
-        <a href="index.html" class="btn btn-secondary mt-4">Back to Home</a>
+
+        <div id="gameArea">
+            <div class="instruction" id="instrText">Click near the ball to kick it! ⚽</div>
+            <div id="ball" class="ball" style="left: 50%; top: 50%;"></div>
+            <div class="speed-bar-container">
+                <div class="speed-bar" id="speedBar" style="width: 0%; background: #0d6efd;"></div>
+            </div>
+            <div class="timer-bar-container">
+                <div class="timer-bar" id="timerBar" style="width: 100%;"></div>
+            </div>
+        </div>
+        <a href="index.html" class="btn btn-secondary mt-3">Back to Home</a>
     </div>
 
     <script src="sound.js"></script>
     <script>
         const ball = document.getElementById('ball');
         const gameArea = document.getElementById('gameArea');
+        const kickCountEl = document.getElementById('kickCount');
+        const scoreEl = document.getElementById('scoreDisplay');
+        const levelEl = document.getElementById('levelDisplay');
+        const goalEl = document.getElementById('goalDisplay');
+        const timeEl = document.getElementById('timeDisplay');
+        const speedBar = document.getElementById('speedBar');
+        const timerBar = document.getElementById('timerBar');
+        const instrText = document.getElementById('instrText');
+        const bestLevelEl = document.getElementById('bestLevel');
 
-        let x = gameArea.clientWidth / 2;
-        let y = 50;
-        let vx = 2;
-        let vy = 0;
-        const gravity = 0.5;
+        let x, y, vx = 0, vy = 0;
+        const ballSize = 40;
+        const gravity = 0.4;
         const bounce = -0.7;
-        const friction = 0.99;
+        const friction = 0.995;
+
+        let kicks = 0;
+        let score = 0;
+        let level = 1;
+        let levelGoal = 50;
+        let timeLeft = 60;
+        let gameRunning = true;
+        let timerInterval = null;
+        let particles = [];
+        let targets = []; // array of { el, x, y, size, type: 'star'|'bomb' }
+        let targetTimer = 0;
+        let bestLvl = parseInt(localStorage.getItem('gravityBestLevel')) || 1;
+
+        bestLevelEl.textContent = bestLvl;
+
+        // Level config: goal points and time in seconds
+        function getLevelConfig(lvl) {
+            // Lvl 1: 50pts / 60s, Lvl 2: 70pts / 55s, ... scaling reasonably
+            const goal = 50 + (lvl - 1) * 20;
+            const time = Math.max(30, 65 - (lvl - 1) * 5);
+            return { goal, time };
+        }
+
+        function initPosition() {
+            x = gameArea.clientWidth / 2 - ballSize / 2;
+            y = gameArea.clientHeight / 2;
+            vx = 0;
+            vy = 0;
+        }
+        initPosition();
+
+        function startLevel() {
+            const config = getLevelConfig(level);
+            levelGoal = config.goal;
+            timeLeft = config.time;
+            score = 0;
+            kicks = 0;
+            gameRunning = true;
+
+            levelEl.textContent = level;
+            goalEl.textContent = levelGoal;
+            scoreEl.textContent = 0;
+            kickCountEl.textContent = 0;
+            timeEl.textContent = timeLeft + 's';
+            timerBar.style.width = '100%';
+            timerBar.style.background = '#ffd700';
+
+            instrText.textContent = level === 1 ? 'Click near the ball to kick it! ⚽' : '';
+            instrText.style.display = level === 1 ? 'block' : 'none';
+
+            initPosition();
+            spawnTargets();
+
+            // Start timer
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!gameRunning) return;
+                timeLeft--;
+                timeEl.textContent = timeLeft + 's';
+                const totalTime = getLevelConfig(level).time;
+                const pct = (timeLeft / totalTime) * 100;
+                timerBar.style.width = pct + '%';
+
+                if (timeLeft <= 10) {
+                    timerBar.style.background = '#dc3545';
+                    timeEl.style.color = '#dc3545';
+                } else {
+                    timerBar.style.background = '#ffd700';
+                    timeEl.style.color = '';
+                }
+
+                if (timeLeft <= 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function levelUp() {
+            gameRunning = false;
+            clearInterval(timerInterval);
+
+            // Update best
+            if (level > bestLvl) {
+                bestLvl = level;
+                localStorage.setItem('gravityBestLevel', bestLvl);
+                bestLevelEl.textContent = bestLvl;
+            }
+
+            level++;
+
+            // Show banner
+            const banner = document.createElement('div');
+            banner.className = 'level-banner';
+            banner.textContent = `⬆️ Level ${level}!`;
+            gameArea.appendChild(banner);
+            Sound.win();
+            setTimeout(() => {
+                banner.remove();
+                startLevel();
+            }, 1800);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            clearInterval(timerInterval);
+
+            if (level > bestLvl) {
+                bestLvl = level;
+                localStorage.setItem('gravityBestLevel', bestLvl);
+                bestLevelEl.textContent = bestLvl;
+            }
+
+            Sound.lose();
+            instrText.style.display = 'block';
+            instrText.innerHTML = `⏰ Time's Up! Reached Level ${level}<br><span style="font-size: 1rem; cursor: pointer;" onclick="restartGame()">Click to Play Again 🔄</span>`;
+        }
+
+        function restartGame() {
+            level = 1;
+            startLevel();
+        }
+
+        // Spawn multiple targets (stars + bombs)
+        function spawnTargets() {
+            // Clear existing
+            targets.forEach(t => t.el.remove());
+            targets = [];
+
+            const count = 2 + Math.min(Math.floor(level / 2), 3); // 2 at lvl1, up to 5
+            const bombChance = Math.min(0.15 + level * 0.05, 0.45); // 20% at lvl1, up to 45%
+
+            for (let i = 0; i < count; i++) {
+                const isBomb = i > 0 && Math.random() < bombChance; // first one is always a star
+                const size = 50 + Math.random() * 30;
+                const tx = Math.random() * (gameArea.clientWidth - size - 20) + 10;
+                const ty = Math.random() * (gameArea.clientHeight - size - 60) + 10;
+
+                const el = document.createElement('div');
+                el.className = isBomb ? 'target-bomb' : 'target-zone';
+                el.style.width = size + 'px';
+                el.style.height = size + 'px';
+                el.style.left = tx + 'px';
+                el.style.top = ty + 'px';
+
+                if (isBomb) {
+                    el.innerHTML = '<div class="bomb-inner"><span class="cracked-star">⭐</span><span class="bomb-icon">💣</span></div>';
+                } else {
+                    el.textContent = '⭐';
+                }
+
+                gameArea.appendChild(el);
+                targets.push({ el, x: tx, y: ty, size, type: isBomb ? 'bomb' : 'star' });
+            }
+            targetTimer = 0;
+        }
+
+        // Remove a single target and optionally spawn a replacement
+        function removeTarget(index) {
+            targets[index].el.remove();
+            targets.splice(index, 1);
+            if (targets.length === 0) spawnTargets();
+        }
+
+        // Particles
+        function addParticle(px, py, color) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size2 = 4 + Math.random() * 6;
+            p.style.width = size2 + 'px';
+            p.style.height = size2 + 'px';
+            p.style.left = px + 'px';
+            p.style.top = py + 'px';
+            p.style.background = color;
+            p.style.opacity = '0.8';
+            gameArea.appendChild(p);
+            particles.push({ el: p, life: 1, decay: 0.03 + Math.random() * 0.03 });
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.life -= p.decay;
+                p.el.style.opacity = p.life;
+                if (p.life <= 0) {
+                    p.el.remove();
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Color based on speed
+        function getSpeedColor(speed) {
+            if (speed < 5) return { bg: 'radial-gradient(circle at 35% 35%, #5dade2, #0d6efd, #1b4f72)', shadow: 'rgba(13,110,253,0.6)', flat: '#0d6efd' };
+            if (speed < 10) return { bg: 'radial-gradient(circle at 35% 35%, #58d68d, #27ae60, #1e8449)', shadow: 'rgba(39,174,96,0.6)', flat: '#27ae60' };
+            if (speed < 16) return { bg: 'radial-gradient(circle at 35% 35%, #f9e154, #f39c12, #d68910)', shadow: 'rgba(243,156,18,0.6)', flat: '#f39c12' };
+            return { bg: 'radial-gradient(circle at 35% 35%, #ec7063, #e74c3c, #922b21)', shadow: 'rgba(231,76,60,0.6)', flat: '#e74c3c' };
+        }
+
+        function showBonus(px, py, text) {
+            const el = document.createElement('div');
+            el.className = 'bonus-popup';
+            el.textContent = text;
+            el.style.left = px + 'px';
+            el.style.top = py + 'px';
+            gameArea.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // Check collision with all targets
+        function checkTargets() {
+            const bCx = x + ballSize / 2;
+            const bCy = y + ballSize / 2;
+
+            for (let i = targets.length - 1; i >= 0; i--) {
+                const t = targets[i];
+                const tCx = t.x + t.size / 2;
+                const tCy = t.y + t.size / 2;
+                const dist = Math.hypot(bCx - tCx, bCy - tCy);
+
+                if (dist < (ballSize / 2 + t.size / 2)) {
+                    if (t.type === 'star') {
+                        const bonus = 3 + level * 2;
+                        score += bonus;
+                        scoreEl.textContent = score;
+                        showBonus(t.x, t.y, `+${bonus} ⭐`);
+                        Sound.win();
+                        for (let j = 0; j < 12; j++) {
+                            addParticle(tCx - 5, tCy - 5, '#ffd700');
+                        }
+                    } else {
+                        // Bomb! penalty
+                        const penalty = 2 + level;
+                        score = Math.max(0, score - penalty);
+                        scoreEl.textContent = score;
+                        showBonus(t.x, t.y, `-${penalty} 💣`);
+                        Sound.explode();
+                        for (let j = 0; j < 8; j++) {
+                            addParticle(tCx - 5, tCy - 5, '#ff4444');
+                        }
+                        // Lose 2 seconds
+                        timeLeft = Math.max(1, timeLeft - 2);
+                        timeEl.textContent = timeLeft + 's';
+                    }
+                    removeTarget(i);
+                    checkLevelUp();
+                }
+            }
+        }
+
+        function checkLevelUp() {
+            if (score >= levelGoal) {
+                levelUp();
+            }
+        }
 
         function update() {
+            if (!gameRunning) {
+                requestAnimationFrame(update);
+                return;
+            }
+
             vy += gravity;
             x += vx;
             y += vy;
+            vx *= friction;
 
-            // Floor collision
-            if (y + 60 > gameArea.clientHeight) {
-                y = gameArea.clientHeight - 60;
-                vy *= bounce;
-                vx *= friction; // Ground friction
-                if (Math.abs(vy) > 2) Sound.bounce(); // Sound on impact
-            }
-            // Ceiling collision
-            else if (y < 0) {
-                y = 0;
-                vy *= bounce;
-                Sound.bounce();
-            }
+            const areaW = gameArea.clientWidth;
+            const areaH = gameArea.clientHeight;
 
-            // Wall collision
-            if (x + 60 > gameArea.clientWidth) {
-                x = gameArea.clientWidth - 60;
-                vx *= bounce;
-                Sound.bounce();
-            } else if (x < 0) {
-                x = 0;
-                vx *= bounce;
-                Sound.bounce();
+            // Floor
+            if (y + ballSize > areaH) {
+                y = areaH - ballSize;
+                vy *= bounce;
+                vx *= 0.98;
+                if (Math.abs(vy) > 2) Sound.bounce();
             }
+            // Ceiling
+            if (y < 0) { y = 0; vy *= bounce; Sound.bounce(); }
+            // Walls
+            if (x + ballSize > areaW) { x = areaW - ballSize; vx *= bounce; Sound.bounce(); }
+            if (x < 0) { x = 0; vx *= bounce; Sound.bounce(); }
 
             ball.style.left = x + 'px';
             ball.style.top = y + 'px';
 
+            // Speed color
+            const speed = Math.hypot(vx, vy);
+            const colors = getSpeedColor(speed);
+            ball.style.background = colors.bg;
+            ball.style.boxShadow = `0 0 15px ${colors.shadow}`;
+
+            // Speed bar
+            const barPct = Math.min(speed / 25 * 100, 100);
+            speedBar.style.width = barPct + '%';
+            speedBar.style.background = colors.flat;
+
+            // Trail particles
+            if (speed > 4 && Math.random() > 0.5) {
+                addParticle(x + ballSize / 2 - 3, y + ballSize / 2 - 3, colors.flat);
+            }
+
+            updateParticles();
+            checkTargets();
+
+            // Respawn all targets if too old
+            targetTimer++;
+            if (targetTimer > 600) spawnTargets();
+
             requestAnimationFrame(update);
         }
 
-        gameArea.addEventListener('mousedown', kick);
-        gameArea.addEventListener('touchstart', (e) => { e.preventDefault(); kick(); });
+        // Directional kick: ball moves TOWARD click direction
+        // Click left = ball goes left, click above = ball jumps higher
+        function kick(e) {
+            if (!gameRunning) return;
 
-        function kick() {
-            Sound.click(); // Kick sound
-            vy = -15; // Jump up
-            vx = (Math.random() - 0.5) * 10; // Random horizontal push
+            const rect = gameArea.getBoundingClientRect();
+            let clickX, clickY;
+            if (e.touches) {
+                clickX = e.touches[0].clientX - rect.left;
+                clickY = e.touches[0].clientY - rect.top;
+            } else {
+                clickX = e.clientX - rect.left;
+                clickY = e.clientY - rect.top;
+            }
 
-            // Add a little squash effect
-            ball.style.transform = "scale(1.2, 0.8)";
+            // Ball center
+            const bCx = x + ballSize / 2;
+            const bCy = y + ballSize / 2;
+
+            // Direction: ball moves TOWARD click position
+            let dx = clickX - bCx;
+            let dy = clickY - bCy;
+
+            // Horizontal: proportional to how far left/right you click
+            const areaW = gameArea.clientWidth;
+            vx = (dx / areaW) * 20; // scale nicely
+
+            // Vertical: clicking higher = ball jumps much higher
+            // dy < 0 means click is above ball → strong upward force
+            // dy > 0 means click is below ball → weak upward force
+            const areaH = gameArea.clientHeight;
+            const heightRatio = -dy / areaH; // positive when clicking above
+            vy = -8 - Math.max(0, heightRatio) * 22; // base jump + height bonus
+            // Even clicking below gives a small upward kick
+            if (vy > -6) vy = -6;
+
+            Sound.click();
+            kicks++;
+            score++;
+            kickCountEl.textContent = kicks;
+            scoreEl.textContent = score;
+
+            // Hide instruction
+            instrText.style.display = 'none';
+
+            // Squash effect
+            ball.style.transform = "scale(1.3, 0.7)";
             setTimeout(() => ball.style.transform = "scale(1)", 100);
+
+            // Kick particles
+            for (let i = 0; i < 6; i++) {
+                addParticle(
+                    x + ballSize / 2 + (Math.random() - 0.5) * 20,
+                    y + ballSize,
+                    '#fff'
+                );
+            }
+
+            checkLevelUp();
         }
 
+        gameArea.addEventListener('mousedown', kick);
+        gameArea.addEventListener('touchstart', (e) => { e.preventDefault(); kick(e); });
+
+        // Start level 1
+        startLevel();
         update();
     </script>
 </body>
